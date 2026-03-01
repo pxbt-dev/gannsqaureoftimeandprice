@@ -1,9 +1,9 @@
-package Service;
+package com.pxbt.dev.gannsquaretimeprice.Service;
 
-import Gateway.PriceDataGateway;
-import dto.GannSquareGrid;
-import dto.PricePoint;
-import dto.Projection;
+import com.pxbt.dev.gannsquaretimeprice.Gateway.PriceDataGateway;
+import com.pxbt.dev.gannsquaretimeprice.dto.GannSquareGrid;
+import com.pxbt.dev.gannsquaretimeprice.dto.PricePoint;
+import com.pxbt.dev.gannsquaretimeprice.dto.Projection;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;

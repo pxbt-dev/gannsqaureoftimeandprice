@@ -1,6 +1,6 @@
-package Gateway;
+package com.pxbt.dev.gannsquaretimeprice.Gateway;
 
-import dto.PricePoint;
+import com.pxbt.dev.gannsquaretimeprice.dto.PricePoint;
 
 import java.net.URI;
 import java.net.http.HttpClient;

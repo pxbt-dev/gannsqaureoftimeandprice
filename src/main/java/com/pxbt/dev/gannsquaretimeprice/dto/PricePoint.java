@@ -1,4 +1,4 @@
-package dto;
+package com.pxbt.dev.gannsquaretimeprice.dto;
 
 import java.time.LocalDate;
 

@@ -1,7 +1,9 @@
-import Gateway.PriceDataGateway;
-import Service.GannSquareService;
-import dto.PricePoint;
-import dto.Projection;
+package com.pxbt.dev.gannsquaretimeprice;
+
+import com.pxbt.dev.gannsquaretimeprice.Gateway.PriceDataGateway;
+import com.pxbt.dev.gannsquaretimeprice.Service.GannSquareService;
+import com.pxbt.dev.gannsquaretimeprice.dto.PricePoint;
+import com.pxbt.dev.gannsquaretimeprice.dto.Projection;
 
 import java.util.Comparator;
 import java.util.List;
