@@ -1,7 +1,6 @@
 package com.pxbt.dev.gannsquaretimeprice;
 
 import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 import com.pxbt.dev.gannsquaretimeprice.Service.GannSquareService;
 import com.pxbt.dev.gannsquaretimeprice.Gateway.PriceDataGateway;
