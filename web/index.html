@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gann Square of Time & Price</title>
+    <meta name="description"
+        content="Interactive Gann Square of Time & Price analysis tool with real-time Binance market data, Fibonacci projections, Gann angles, and Square of Nine grid.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 40 40" fill="none">
+                        <rect x="2" y="2" width="36" height="36" rx="8" stroke="url(#logoGrad)" stroke-width="2.5" />
+                        <path d="M12 28L20 12L28 28" stroke="url(#logoGrad)" stroke-width="2.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <line x1="15" y1="22" x2="25" y2="22" stroke="url(#logoGrad)" stroke-width="2"
+                            stroke-linecap="round" />
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="40" y2="40">
+                                <stop stop-color="#6366f1" />
+                                <stop offset="1" stop-color="#a78bfa" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div>
+                        <h1>Gann Square</h1>
+                        <span class="subtitle">Time & Price Analysis</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-controls">
+                <div class="input-group">
+                    <label for="symbolInput">Symbol</label>
+                    <input type="text" id="symbolInput" value="BTC" placeholder="e.g. BTC, ETH" spellcheck="false">
+                </div>
+                <div class="input-group">
+                    <label for="intervalSelect">Interval</label>
+                    <select id="intervalSelect">
+                        <option value="1h">1 Hour</option>
+                        <option value="4h">4 Hours</option>
+                        <option value="1d" selected>1 Day</option>
+                        <option value="1w">1 Week</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="limitInput">Candles</label>
+                    <input type="number" id="limitInput" value="1000" min="30" max="1000">
+                </div>
+                <button id="analyzeBtn" class="btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M14 8L2 8M14 8L9 3M14 8L9 13" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Analyze
+                </button>
+            </div>
+        </header>
+
+        <!-- Loading overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="loading-spinner"></div>
+            <p>Fetching data from Binance & calculating projections...</p>
+        </div>
+
+        <!-- Main Content -->
+        <main id="mainContent" class="main-content">
+            <!-- Summary Cards -->
+            <section class="summary-cards" id="summaryCards">
+                <div class="card summary-card" id="cardLow">
+                    <div class="card-label">Period Low</div>
+                    <div class="card-value" id="valLow">—</div>
+                    <div class="card-sub" id="subLow">—</div>
+                </div>
+                <div class="card summary-card" id="cardHigh">
+                    <div class="card-label">Period High</div>
+                    <div class="card-value" id="valHigh">—</div>
+                    <div class="card-sub" id="subHigh">—</div>
+                </div>
+                <div class="card summary-card" id="cardLatest">
+                    <div class="card-label">Latest Price</div>
+                    <div class="card-value" id="valLatest">—</div>
+                    <div class="card-sub" id="subLatest">—</div>
+                </div>
+                <div class="card summary-card" id="cardRange">
+                    <div class="card-label">Price Range</div>
+                    <div class="card-value" id="valRange">—</div>
+                    <div class="card-sub" id="subRange">—</div>
+                </div>
+            </section>
+
+            <!-- Price Chart -->
+            <section class="card chart-section" id="chartSection">
+                <div class="card-header">
+                    <h2>📈 Price Chart with Gann Levels</h2>
+                    <div class="chart-legend" id="chartLegend"></div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Projections Grid -->
+            <section class="projections-grid">
+                <!-- Time Projections -->
+                <div class="card" id="timeProjectionsCard">
+                    <div class="card-header">
+                        <h2>⏱ Time Projections</h2>
+                        <span class="badge badge-blue" id="timeCount">0</span>
+                    </div>
+                    <div class="table-scroll">
+                        <table id="timeTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Ratio</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Price Projections -->
+                <div class="card" id="priceProjectionsCard">
+                    <div class="card-header">
+                        <h2>💰 Price Projections</h2>
+                        <span class="badge badge-green" id="priceCount">0</span>
+                    </div>
+                    <div class="table-scroll">
+                        <table id="priceTable">
+                            <thead>
+                                <tr>
+                                    <th>Price Level</th>
+                                    <th>Type</th>
+                                    <th>Ratio</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Gann Angles -->
+                <div class="card" id="angleProjectionsCard">
+                    <div class="card-header">
+                        <h2>📐 Gann Angles</h2>
+                        <span class="badge badge-purple" id="angleCount">0</span>
+                    </div>
+                    <div class="table-scroll">
+                        <table id="angleTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Price</th>
+                                    <th>Angle</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Square of Nine -->
+                <div class="card" id="sq9Card">
+                    <div class="card-header">
+                        <h2>🔲 Square of Nine</h2>
+                        <span class="badge badge-amber" id="sq9Count">0</span>
+                    </div>
+                    <div class="table-scroll">
+                        <table id="sq9Table">
+                            <thead>
+                                <tr>
+                                    <th>Price Level</th>
+                                    <th>Type</th>
+                                    <th>Degrees</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Square of Nine Grid Visual -->
+            <section class="card" id="gridSection">
+                <div class="card-header">
+                    <h2>🌀 Square of Nine Grid</h2>
+                </div>
+                <div class="info-box">
+                    <strong>How to read the Square of Nine:</strong> This is W.D. Gann's famous spiral grid, starting
+                    from
+                    <span class="highlight hl-center">1</span> at the center and spiralling outward. Numbers on the
+                    <span class="highlight hl-cardinal">cardinal cross</span> (horizontal &amp; vertical through the
+                    center)
+                    represent <strong>strong support/resistance levels</strong>. Numbers on the
+                    <span class="highlight hl-ordinal">ordinal cross</span> (diagonals) represent <strong>secondary
+                        support/resistance</strong>. In Gann theory, the square root of price is placed on the wheel —
+                    prices
+                    that align on the same cross as your base price are natural turning points. The table above shows
+                    the
+                    calculated price levels using the √price method from the midpoint of your data range.
+                </div>
+                <div class="grid-container">
+                    <canvas id="gridCanvas" width="500" height="500"></canvas>
+                </div>
+                <div class="grid-legend">
+                    <span class="grid-legend-item">
+                        <span class="grid-legend-swatch" style="background:rgba(99,102,241,0.5)"></span> Center
+                    </span>
+                    <span class="grid-legend-item">
+                        <span class="grid-legend-swatch" style="background:rgba(248,113,113,0.25)"></span> Cardinal
+                        Cross (Strong S/R)
+                    </span>
+                    <span class="grid-legend-item">
+                        <span class="grid-legend-swatch" style="background:rgba(52,211,153,0.2)"></span> Ordinal Cross
+                        (Secondary S/R)
+                    </span>
+                </div>
+            </section>
+        </main>
+
+        <!-- Initial state — clear prompt to enter a symbol -->
+        <div id="emptyState" class="empty-state">
+            <div class="empty-icon">
+                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                    <rect x="4" y="4" width="72" height="72" rx="16" stroke="url(#emptyGrad)" stroke-width="3" />
+                    <path d="M24 56L40 24L56 56" stroke="url(#emptyGrad)" stroke-width="3" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <line x1="30" y1="44" x2="50" y2="44" stroke="url(#emptyGrad)" stroke-width="2.5"
+                        stroke-linecap="round" />
+                    <circle cx="40" cy="32" r="3" fill="url(#emptyGrad)" />
+                    <defs>
+                        <linearGradient id="emptyGrad" x1="0" y1="0" x2="80" y2="80">
+                            <stop stop-color="#6366f1" />
+                            <stop offset="1" stop-color="#a78bfa" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <h2>Enter a Symbol to Begin</h2>
+            <p>Type a cryptocurrency symbol in the <strong>Symbol</strong> field above<br>and click
+                <strong>Analyze</strong> to calculate Gann Square projections<br>using live data from Binance.</p>
+            <div class="symbol-examples">
+                <button class="symbol-chip" data-symbol="BTC">BTC</button>
+                <button class="symbol-chip" data-symbol="ETH">ETH</button>
+                <button class="symbol-chip" data-symbol="SOL">SOL</button>
+                <button class="symbol-chip" data-symbol="XRP">XRP</button>
+                <button class="symbol-chip" data-symbol="BNB">BNB</button>
+                <button class="symbol-chip" data-symbol="DOGE">DOGE</button>
+            </div>
+            <div class="arrow-hint">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 2L8 14M8 2L3 7M8 2L13 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+                Click a symbol above or type your own
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
