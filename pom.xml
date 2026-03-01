@@ -24,16 +24,11 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Exclude Tomcat from Spring Boot -->
+        <!-- Use Tomcat (don't exclude it!) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
-            </exclusions>
+            <!-- REMOVE THIS EXCLUSION! -->
         </dependency>
     </dependencies>
 
@@ -45,4 +40,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>
