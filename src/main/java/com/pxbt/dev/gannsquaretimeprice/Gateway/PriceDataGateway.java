@@ -1,6 +1,7 @@
 package com.pxbt.dev.gannsquaretimeprice.Gateway;
 
 import com.pxbt.dev.gannsquaretimeprice.dto.PricePoint;
+import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -17,6 +18,7 @@ import java.util.List;
  * Gateway to fetch real market data from the Binance public API.
  * Uses Java's built-in HttpClient — no external dependencies.
  */
+@Component
 public class PriceDataGateway {
 
     private static final String BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines";

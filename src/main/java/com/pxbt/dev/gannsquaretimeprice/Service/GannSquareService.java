@@ -4,6 +4,7 @@ import com.pxbt.dev.gannsquaretimeprice.Gateway.PriceDataGateway;
 import com.pxbt.dev.gannsquaretimeprice.dto.GannSquareGrid;
 import com.pxbt.dev.gannsquaretimeprice.dto.PricePoint;
 import com.pxbt.dev.gannsquaretimeprice.dto.Projection;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -16,6 +17,8 @@ import java.util.List;
  * Calculates time projections, price projections, Gann angles,
  * and Square of Nine support/resistance levels.
  */
+
+@Service
 public class GannSquareService {
 
     // Gann static ratios (divisions of the circle/square)
