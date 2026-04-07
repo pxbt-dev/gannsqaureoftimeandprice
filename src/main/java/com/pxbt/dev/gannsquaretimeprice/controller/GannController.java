@@ -16,9 +16,10 @@ public class GannController {
     public ResponseEntity<String> getGannAnalysis(
             @RequestParam(defaultValue = "BTC") String symbol,
             @RequestParam(defaultValue = "1d") String interval,
-            @RequestParam(defaultValue = "180") int limit) {
+            @RequestParam(defaultValue = "365") int limit,
+            @RequestParam(required = false) String startDate) {
 
-        String result = gannService.runFullAnalysis(symbol, interval, limit);
+        String result = gannService.runFullAnalysis(symbol, interval, limit, startDate);
         return ResponseEntity.ok(result);
     }
 
@@ -26,7 +27,7 @@ public class GannController {
     public ResponseEntity<String> getKlines(
             @RequestParam(defaultValue = "BTC") String symbol,
             @RequestParam(defaultValue = "1d") String interval,
-            @RequestParam(defaultValue = "180") int limit) {
+            @RequestParam(defaultValue = "365") int limit) {
 
         String result = gannService.getRawKlines(symbol, interval, limit);
         return ResponseEntity.ok(result);

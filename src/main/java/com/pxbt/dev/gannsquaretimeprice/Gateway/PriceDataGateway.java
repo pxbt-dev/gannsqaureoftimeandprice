@@ -1,6 +1,7 @@
 package com.pxbt.dev.gannsquaretimeprice.Gateway;
 
 import com.pxbt.dev.gannsquaretimeprice.dto.PricePoint;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -17,21 +18,149 @@ import java.util.List;
 /**
  * Gateway to fetch real market data from the Binance public API.
  * Uses Java's built-in HttpClient — no external dependencies.
+ *
+ * Supports paginated fetching to retrieve data beyond the 1000-candle
+ * per-request limit.
  */
 @Component
 public class PriceDataGateway {
 
     private static final String BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines";
+    private static final int PAGE_SIZE = 1000; // Binance hard limit per request
     private final HttpClient httpClient;
+    private final PriceDataCache cache;
 
-    public PriceDataGateway() {
+    @Autowired
+    public PriceDataGateway(PriceDataCache cache) {
+        this.cache = cache;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
     }
 
     /**
-     * Fetch kline/candlestick data from Binance.
+     * Fetch all klines from startDate up to today, paginating automatically.
+     * Each page fetches 1000 candles; continues until today is reached.
+     *
+     * @param symbol    Trading pair base (e.g., "BTC" → becomes "BTCUSDT")
+     * @param interval  Kline interval (e.g., "1d", "4h", "1h")
+     * @param startDate The earliest date to fetch data from
+     * @return Fully stitched list of PricePoints sorted oldest → newest
+     */
+    public List<PricePoint> fetchPriceDataSince(String symbol, String interval, LocalDate startDate) {
+
+        // ── 1. Load what we already have on disk ─────────────────────────────
+        List<PricePoint> cached = cache.load(symbol, interval);
+        LocalDate lastCached = cache.getLastCachedDate(symbol, interval);
+
+        // Determine the effective fetch start:
+        // - If cache is empty or older than requested startDate → use startDate
+        // - If cache covers past startDate → only fetch the missing tail
+        LocalDate fetchFrom;
+        if (lastCached == null) {
+            fetchFrom = startDate;
+            System.out.println("[Cache] No cache for " + symbol + " " + interval + " – fetching from " + startDate);
+        } else if (lastCached.isBefore(LocalDate.now().minusDays(1))) {
+            // Cache exists but is not fully up to date – top it up
+            fetchFrom = lastCached.plusDays(1);
+            System.out.println("[Cache] Cache for " + symbol + " " + interval
+                    + " last at " + lastCached + " – fetching delta from " + fetchFrom);
+        } else {
+            // Cache is fresh (last entry is yesterday or today)
+            System.out.println("[Cache] Cache for " + symbol + " " + interval + " is up to date – returning "
+                    + cached.size() + " candles");
+            // Filter to the requested startDate window
+            return filtered(cached, startDate);
+        }
+
+        // ── 2. Fetch only the missing candles from Binance ───────────────────
+        List<PricePoint> newCandles = fetchFromBinance(symbol, interval, fetchFrom);
+
+        // ── 3. Merge and persist ─────────────────────────────────────────────
+        if (!newCandles.isEmpty()) {
+            cache.save(symbol, interval, newCandles);
+        }
+
+        // Reload from disk to get the fully merged result
+        List<PricePoint> all = cache.load(symbol, interval);
+        if (all.isEmpty()) {
+            // Fallback: just return what we fetched (cache write may have failed)
+            all = newCandles;
+        }
+
+        return filtered(all, startDate);
+    }
+
+    /** Filter a list of candles to only those on or after startDate. */
+    private List<PricePoint> filtered(List<PricePoint> points, LocalDate startDate) {
+        List<PricePoint> result = new ArrayList<>();
+        for (PricePoint p : points) {
+            if (!p.getDate().isBefore(startDate))
+                result.add(p);
+        }
+        return result;
+    }
+
+    /**
+     * Core Binance paginated fetch — fetches all candles from fetchFrom to today.
+     */
+    private List<PricePoint> fetchFromBinance(String symbol, String interval, LocalDate fetchFrom) {
+        String binanceSymbol = symbol.toUpperCase();
+        if (!binanceSymbol.endsWith("USDT"))
+            binanceSymbol += "USDT";
+
+        List<PricePoint> allPoints = new ArrayList<>();
+        long startMs = fetchFrom.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+        long nowMs = Instant.now().toEpochMilli();
+
+        int maxPages = 50; // safety cap (50 000 candles max)
+        int page = 0;
+
+        while (startMs < nowMs && page < maxPages) {
+            String url = String.format("%s?symbol=%s&interval=%s&limit=%d&startTime=%d",
+                    BINANCE_KLINES_URL, binanceSymbol, interval, PAGE_SIZE, startMs);
+
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .timeout(Duration.ofSeconds(20))
+                        .header("Accept", "application/json")
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() != 200) {
+                    System.err.println("Binance API error (HTTP " + response.statusCode() + "): " + response.body());
+                    break;
+                }
+
+                List<PricePoint> pagePoints = parseKlines(response.body());
+                if (pagePoints.isEmpty())
+                    break;
+
+                allPoints.addAll(pagePoints);
+
+                PricePoint last = pagePoints.get(pagePoints.size() - 1);
+                long lastMs = last.getDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
+                startMs = lastMs + 1;
+                page++;
+
+                Thread.sleep(100); // be polite to the Binance rate limit
+
+            } catch (Exception e) {
+                System.err.println("[Binance] Failed on page " + page + ": " + e.getMessage());
+                break;
+            }
+        }
+
+        System.out.println(
+                "[Binance] Fetched " + allPoints.size() + " candles across " + page + " pages for " + binanceSymbol);
+        return allPoints;
+    }
+
+    /**
+     * Fetch kline/candlestick data from Binance (most recent N candles).
      *
      * @param symbol   Trading pair base (e.g., "BTC" → becomes "BTCUSDT")
      * @param interval Kline interval (e.g., "1d", "4h", "1h")
@@ -74,8 +203,7 @@ public class PriceDataGateway {
      * Backward-compatible method using date range.
      */
     public List<PricePoint> fetchPriceData(LocalDate startDate, LocalDate endDate) {
-        long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-        return fetchPriceData("BTC", "1d", (int) Math.min(days, 1000));
+        return fetchPriceDataSince("BTC", "1d", startDate);
     }
 
     /**
@@ -113,13 +241,10 @@ public class PriceDataGateway {
     private List<PricePoint> parseKlines(String json) {
         List<PricePoint> points = new ArrayList<>();
 
-        // Strip outer brackets
         json = json.trim();
         if (!json.startsWith("[["))
             return points;
 
-        // Split into individual kline arrays
-        // Each kline: [timestamp,"open","high","low","close","volume", ...]
         int depth = 0;
         int start = -1;
 

@@ -6,7 +6,7 @@
     const $ = id => document.getElementById(id);
     const symbolInput = $('symbolInput');
     const intervalSelect = $('intervalSelect');
-    const limitInput = $('limitInput');
+    const startDateInput = $('startDateInput');
     const analyzeBtn = $('analyzeBtn');
     const loadingOverlay = $('loadingOverlay');
     const mainContent = $('mainContent');
@@ -32,13 +32,13 @@
     async function runAnalysis() {
         const symbol = symbolInput.value.trim().toUpperCase() || 'BTC';
         const interval = intervalSelect.value;
-        const limit = parseInt(limitInput.value) || 1000;
+        const startDate = startDateInput.value || '2019-01-01';
 
         analyzeBtn.disabled = true;
         loadingOverlay.classList.remove('hidden');
 
         try {
-            const resp = await fetch(`/api/gann?symbol=${symbol}&interval=${interval}&limit=${limit}`);
+            const resp = await fetch(`/api/gann?symbol=${symbol}&interval=${interval}&startDate=${startDate}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             analysisData = await resp.json();
 

@@ -7,6 +7,7 @@ import com.pxbt.dev.gannsquaretimeprice.dto.Projection;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -52,6 +53,10 @@ public class GannSquareService {
 
     public List<PricePoint> getHistoricalData(String symbol, String interval, int limit) {
         return priceDataGateway.fetchPriceData(symbol, interval, limit);
+    }
+
+    public List<PricePoint> getHistoricalData(String symbol, String interval, LocalDate startDate) {
+        return priceDataGateway.fetchPriceDataSince(symbol, interval, startDate);
     }
 
     public List<PricePoint> getHistoricalData(LocalDate startDate, LocalDate endDate) {
@@ -182,8 +187,24 @@ public class GannSquareService {
     /**
      * Runs the complete Gann analysis and returns all projections as JSON.
      */
-    public String runFullAnalysis(String symbol, String interval, int limit) {
-        List<PricePoint> data = getHistoricalData(symbol, interval, limit);
+    /**
+     * Runs the complete Gann analysis and returns all projections as JSON.
+     * If startDate is provided (non-null, non-blank), fetches paginated data from
+     * that date.
+     * Otherwise falls back to the most recent `limit` candles.
+     */
+    public String runFullAnalysis(String symbol, String interval, int limit, String startDate) {
+        List<PricePoint> data;
+        if (startDate != null && !startDate.isBlank()) {
+            try {
+                LocalDate from = LocalDate.parse(startDate);
+                data = getHistoricalData(symbol, interval, from);
+            } catch (DateTimeParseException e) {
+                return "{\"error\":\"Invalid startDate format. Use YYYY-MM-DD\"}";
+            }
+        } else {
+            data = getHistoricalData(symbol, interval, limit);
+        }
         if (data.size() < 2) {
             return "{\"error\":\"Not enough data\"}";
         }

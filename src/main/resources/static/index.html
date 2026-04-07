@@ -55,8 +55,8 @@
                     </select>
                 </div>
                 <div class="input-group">
-                    <label for="limitInput">Candles</label>
-                    <input type="number" id="limitInput" value="1000" min="30" max="1000">
+                    <label for="startDateInput">From Date</label>
+                    <input type="date" id="startDateInput" value="2019-01-01">
                 </div>
                 <button id="analyzeBtn" class="btn-primary">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -71,7 +71,7 @@
         <!-- Loading overlay -->
         <div id="loadingOverlay" class="loading-overlay hidden">
             <div class="loading-spinner"></div>
-            <p>Fetching data from Binance & calculating projections...</p>
+            <p>Fetching historical data from Binance (may take a few seconds)...</p>
         </div>
 
         <!-- Main Content -->
@@ -256,7 +256,8 @@
             </div>
             <h2>Enter a Symbol to Begin</h2>
             <p>Type a cryptocurrency symbol in the <strong>Symbol</strong> field above<br>and click
-                <strong>Analyze</strong> to calculate Gann Square projections<br>using live data from Binance.</p>
+                <strong>Analyze</strong> to calculate Gann Square projections<br>using live data from Binance.
+            </p>
             <div class="symbol-examples">
                 <button class="symbol-chip" data-symbol="BTC">BTC</button>
                 <button class="symbol-chip" data-symbol="ETH">ETH</button>
@@ -284,9 +285,8 @@
         margin: 0;
     ">
             &copy; <span id="currentYear">2026</span>
-            <a href="https://bornoutofcuriosity.com"
-               style="color: #00d9ff; text-decoration: none;"
-               onmouseout="this.style.textDecoration='none'">
+            <a href="https://bornoutofcuriosity.com" style="color: #00d9ff; text-decoration: none;"
+                onmouseout="this.style.textDecoration='none'">
                 bornoutofcuriosity.com
             </a> | All experiments are ongoing.
         </p>
